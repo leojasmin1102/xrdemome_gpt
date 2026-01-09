@@ -17,7 +17,6 @@
 // 1. 顶点着色器源码 (GLSL语言)
 // 作用：告诉显卡，顶点在哪里
 const char* vertexShaderSource = "#version 330 core\n"
-// 0.0.2 修改Vertex Shader:
 "layout (location = 0) in vec3 aPos;\n"
 "layout (location = 1) in float aStress;\n"
  "out float vStress; \n"
@@ -29,7 +28,6 @@ const char* vertexShaderSource = "#version 330 core\n"
 "vStress = aStress;\n"
 "   gl_Position = projection * view * model * vec4(aPos, 1.0);\n"
 "}\0";
-// 0.0.2
 
 // 2. 片段着色器源码 (GLSL语言)
 // 作用：告诉显卡，像素涂什么颜色 (这里是橙色)
@@ -38,10 +36,6 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "in float vStress;\n"
 "void main()\n"
 "{\n"
-// 0.0.1:
-//"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-// 0.0.1
-// 0.0.2:
 // 蓝 -> 红
 "vec3 blue = vec3(0.0, 0.0, 1.0);\n"
 "vec3 red = vec3(1.0, 0.0, 0.0);\n"
@@ -50,7 +44,6 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "vec3 color = mix(blue, red, s);\n"
 
 "FragColor = vec4(color, 1.0);\n"
-// 0.0.2
 "}\n\0";
 
 struct CAEVertex
@@ -103,17 +96,7 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    //0.0.0:
-    // --- 准备顶点数据 ---
-    // 三个点：X, Y, Z
-    //float vertices[] = {
-    //    -0.5f, 0.5f, 0.0f, // 左下角
-    //     0.5f, 0.5f, 0.0f, // 右下角
-    //     0.0f,  -0.5f, 0.0f  // 顶部
-    //};
-    //0.0.0:
-
-    //0.0.1 在cpu侧生成1万个点：
+    //在cpu侧生成1万个点：
     std::vector<CAEVertex> vertices;
 
     srand((unsigned int)time(nullptr));
@@ -146,31 +129,21 @@ int main() {
 
     // 2. 把顶点数据复制到缓冲中供 OpenGL 使用
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    //0.0.0
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //0.0.0
 
     //0.0.1 VBO上传数据 
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CAEVertex), vertices.data(), GL_STATIC_DRAW);
 
     // 3. 告诉 OpenGL 怎么解析这些数据
-    // 0.0.0：
     // 参数解释：0号属性, 3个值(xyz), float类型, 不标准化, 步长(3*float), 起始偏移量0
-    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    //glEnableVertexAttribArray(0);
-    //0.0.0
+
     //0.0.1 告诉 OpenGL 如何解析这个结构体:
     // position
       glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,sizeof(CAEVertex), (void*)0);
       glEnableVertexAttribArray(0);
     // stress 
       glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(CAEVertex), (void*)offsetof(CAEVertex, stress));
-      //glDisableVertexAttribArray(1);
-    //0.0.1    
-
-    //0.0.2 启用stress顶点属性
       glEnableVertexAttribArray(1);
-    //0.0.2
+
 
 
     
@@ -206,9 +179,6 @@ int main() {
 
         // [5] 绘制
         glBindVertexArray(VAO);
-        //0.0.0 绘制三角形:
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        //0.0.0
 
         //0.0.1 点云
         glPointSize(4.0f);
