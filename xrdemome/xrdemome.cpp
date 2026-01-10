@@ -30,27 +30,33 @@ const char* vertexShaderSource = "#version 330 core\n"
 "}\0";
 
 // 2. 片段着色器源码 (GLSL语言)
-// 作用：告诉显卡，像素涂什么颜色 (这里是橙色)
+// 作用：告诉显卡，像素涂什么颜色
+
 const char* fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
 "in float vStress;\n"
+"out vec4 FragColor;\n"
+"uniform sampler1D colormap;\n"
 "void main()\n"
 "{\n"
-// 蓝 -> 红
-"vec3 blue = vec3(0.0, 0.0, 1.0);\n"
-"vec3 red = vec3(1.0, 0.0, 0.0);\n"
+"    float s = clamp(vStress, 0.0, 1.0);\n"
+"    vec3 color = texture(colormap, s).rgb;\n"
+"    FragColor = vec4(color, 1.0);\n"
+"}\n";
 
-"float s = clamp(vStress, 0.0, 1.0);\n"
-"vec3 color = mix(blue, red, s);\n"
-
-"FragColor = vec4(color, 1.0);\n"
-"}\n\0";
 
 struct CAEVertex
 {
     glm::vec3 position;
     float stress;
 };
+
+inline float clampf(float x, float minVal, float maxVal)
+{
+    if (x < minVal) return minVal;
+    if (x > maxVal) return maxVal;
+    return x;
+}
+
 
 int main() {
     // --- 初始化 GLFW 和 窗口 (和你之前一样) ---
@@ -74,6 +80,7 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
+
     // --- 编译着色器 (这是显卡能听懂的程序) ---
     // A. 编译顶点着色器
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -96,7 +103,7 @@ int main() {
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    //在cpu侧生成1万个点：
+    // 在cpu侧生成1万个点 （VAO、VBO将会使用到）
     std::vector<CAEVertex> vertices;
 
     srand((unsigned int)time(nullptr));
@@ -145,6 +152,50 @@ int main() {
       glEnableVertexAttribArray(1);
 
 
+      // ----------------------------
+  // 3.x 生成 Colormap（CPU）
+  // ----------------------------
+      std::vector<float> colormap;
+
+      for (int i = 0; i < 256; ++i)
+      {
+          float t = i / 255.0f;
+
+          float r = clampf(1.5f - fabs(4.0f * t - 3.0f), 0.0f, 1.0f);
+          float g = clampf(1.5f - fabs(4.0f * t - 2.0f), 0.0f, 1.0f);
+          float b = clampf(1.5f - fabs(4.0f * t - 1.0f), 0.0f, 1.0f);
+
+          colormap.push_back(r);
+          colormap.push_back(g);
+          colormap.push_back(b);
+      }
+
+      // ----------------------------
+      // 3.y 创建 1D 纹理（GPU）
+      // ----------------------------
+      GLuint colormapTex;
+      //glActiveTexture(GL_TEXTURE0);
+      glGenTextures(1, &colormapTex);
+      glBindTexture(GL_TEXTURE_1D, colormapTex);
+
+      glTexImage1D(
+          GL_TEXTURE_1D,
+          0,
+          GL_RGB32F,
+          256,
+          0,
+          GL_RGB,
+          GL_FLOAT,
+          colormap.data()
+      );
+
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+      glUseProgram(shaderProgram);
+      glUniform1i(glGetUniformLocation(shaderProgram, "colormap"), 0);
+
 
     
     // --- 渲染循环 ---
@@ -177,6 +228,10 @@ int main() {
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_1D, colormapTex);
+
+
         // [5] 绘制
         glBindVertexArray(VAO);
 
@@ -189,7 +244,7 @@ int main() {
         glfwPollEvents();
     }
 
-    // 释放资源
+    // ---释放资源---
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteProgram(shaderProgram);
