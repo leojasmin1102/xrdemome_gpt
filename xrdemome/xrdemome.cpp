@@ -121,7 +121,9 @@ int main() {
         );
 
         // 模拟应力值（0~1）
-        v.stress = (rand() % 1000) / 1000.0f;
+        //v.stress = (rand() % 1000) / 1000.0f;
+        // 按照x方向线性变化
+        v.stress = (v.position.x + 1.0f) * 0.5f;
 
         vertices.push_back(v);
     }
@@ -174,7 +176,7 @@ int main() {
       // 3.y 创建 1D 纹理（GPU）
       // ----------------------------
       GLuint colormapTex;
-      //glActiveTexture(GL_TEXTURE0);
+      glActiveTexture(GL_TEXTURE0);
       glGenTextures(1, &colormapTex);
       glBindTexture(GL_TEXTURE_1D, colormapTex);
 
@@ -213,11 +215,18 @@ int main() {
 
         // [4] 计算矩阵并传值
         glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 view = glm::mat4(1.0f);
+        //glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
 
-        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        // 旋转
+        //model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        model = glm::mat4(1.0f);
+        //view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        glm::mat4 view = glm::lookAt(
+            glm::vec3(0.0f, 0.0f, 3.0f),  // 相机位置
+            glm::vec3(0.0f, 0.0f, 0.0f),  // 看向原点
+            glm::vec3(0.0f, 1.0f, 0.0f)   // 上方向
+        );
         projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
         unsigned int modelLoc = glGetUniformLocation(shaderProgram, "model");
